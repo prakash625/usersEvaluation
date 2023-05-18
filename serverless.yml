@@ -1,25 +1,36 @@
-// Serverless Framework YAML definition
+service: phone-number-verification
 
-// Service name
-service: serverless-nodejs-app
+frameworkVersion: "3"
 
-// Provider definition
+custom:
+  myStage: ${opt:stage, self:provider.stage}
+  settings: ${file(./${opt:stage, 'dev'}.json):CREDS}  
+
 provider:
-  name: aws # Use Amazon Web Services as the provider
-  runtime: nodejs14.x # Use Node.js version 14.x
-  stage: dev # Deploy to the "dev" stage
-  region: eu-central-1 # Deploy to the EU Central (Frankfurt) region
+  name: aws
+  runtime: nodejs14.x
+  memorySize: 2048
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'eu-central-1'}
+  environment:
+    
+    ACCESS_KEY: ${self:custom.settings.accessKeyId}
+    SECRET_KEY: ${self:custom.settings.secretAccessKey}
 
-// Functions definition
 functions:
-  app: # Function named "app"
-    handler: app.server # Reference the exported "server" method from the "AppJS" file
-    events: # lambda functions are triggered by events
-      - http: #event trigger for the root route of an API Gateway HTTP  "/"
-          path: /
-          method: ANY # Any HTTP method is excepted
-          cors: true # CORS enabler
-      - http: #
-          path: /{proxy+}
-          method: ANY # Accept any HTTP method
-          cors: true # Enable CORS
+  sendOtp:
+    handler: src/handlers/userVerification/sendSMS.sendOtp
+    events:
+      - http:
+          method: POST
+          path: /send-otp
+          cors: true
+  verifyOtp:
+    handler: src/handlers/userVerification/verifyOtp.verifyOtp
+    events:
+      - http:
+          path: /verify-otp
+          method: POST
+          cors: true   
+  
+
